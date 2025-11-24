@@ -40,7 +40,7 @@ public class OrderFacade {
     public OrderInfo createOrder(CreateOrderCommand command) {
 
         if (command == null || command.items() == null || command.items().isEmpty()) {
-            throw new CoreException(ErrorType.NOT_FOUND, "상품 정보가 비어있습니다");
+            throw new CoreException(ErrorType.BAD_REQUEST, "상품 정보가 비어있습니다");
         }
 
         Order order = Order.create(command.userId());

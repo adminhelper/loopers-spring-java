@@ -40,7 +40,7 @@ public class Brand {
 
     private String requireValidName(String name) {
         if (name == null || name.isEmpty()) {
-            throw new CoreException(ErrorType.BAD_REQUEST, "상품명 비어 있을수 없습니다.");
+            throw new CoreException(ErrorType.BAD_REQUEST, "브랜드명은 비어 있을수 없습니다.");
         }
         return name.trim();
     }

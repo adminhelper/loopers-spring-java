@@ -34,7 +34,7 @@ public class ProductFacade {
     public Page<ProductInfo> getProducts(Pageable pageable) {
         return productService.getProducts(pageable)
                 .map(product ->  {
-                    Brand brand = brandService.getBrand(product.getId());
+                    Brand brand = brandService.getBrand(product.getBrandId());
                     long likeCount = likeService.countByProductId(product.getId());
                     return ProductInfo.of(product, brand, likeCount);
                 });
