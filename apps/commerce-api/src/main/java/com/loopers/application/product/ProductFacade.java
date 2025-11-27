@@ -31,12 +31,11 @@ public class ProductFacade {
     private final LikeService likeService;
     private final ProductDomainService productDomainService;
 
-    public Page<ProductInfo> getProducts(Pageable pageable) {
-        return productService.getProducts(pageable)
+    public Page<ProductInfo> getProducts(Long brandId, Pageable pageable, String sortBy) {
+        return productService.getProducts(brandId, pageable, sortBy)
                 .map(product ->  {
                     Brand brand = brandService.getBrand(product.getBrandId());
-                    long likeCount = likeService.countByProductId(product.getId());
-                    return ProductInfo.of(product, brand, likeCount);
+                    return ProductInfo.of(product, brand);
                 });
     }
 

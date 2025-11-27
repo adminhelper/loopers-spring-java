@@ -15,19 +15,21 @@ import com.loopers.domain.product.Product;
  * 2025. 11. 10.     byeonsungmun       최초 생성
  */
 public record ProductInfo(
-        Long id,
-        String name,
+        Long productId,
+        String productName,
+        Long brandId,
         String brandName,
         Long price,
         Long likeCount
 ) {
-    public static ProductInfo of(Product product, Brand brand, Long likeCount) {
+    public static ProductInfo of(Product product, Brand brand) {
         return new ProductInfo(
                 product.getId(),
                 product.getName(),
+                brand.getId(),
                 brand.getName(),
                 product.getPrice(),
-                likeCount
+                product.getLikeCount()
         );
     }
 }

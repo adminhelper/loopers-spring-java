@@ -32,7 +32,7 @@ public class ProductDomainService {
                 .orElseThrow(() -> new CoreException(ErrorType.NOT_FOUND, "상품을 찾을 수 없습니다."));
         Brand brand = brandRepository.findById(product.getBrandId())
                 .orElseThrow(() -> new CoreException(ErrorType.NOT_FOUND, "브랜드를 찾을 수 없습니다"));
-        long likeCount = likeRepository.countByProductId(id);
+        long likeCount = likeRepository.countByProductId(product.getId());
 
         return ProductDetail.of(product, brand, likeCount);
     }
