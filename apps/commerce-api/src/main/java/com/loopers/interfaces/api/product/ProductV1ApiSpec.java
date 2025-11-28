@@ -24,7 +24,7 @@ public interface ProductV1ApiSpec {
             summary = "상품목록 조회",
             description = "브랜드별 상품 목록을 조회합니다. 페이지네이션 및 정렬을 지원합니다."
     )
-    ApiResponse<ProductV1Dto.ProductResponse> gerProducts(
+    ApiResponse<ProductV1Dto.ProductResponse> getProducts(
             @Schema(description = "브랜드 ID", example = "1")
             @RequestParam(required = false) Long brandId,
 
@@ -38,7 +38,7 @@ public interface ProductV1ApiSpec {
             @RequestParam(defaultValue = "latest") String sort
     );
 
-    ApiResponse<ProductV1Dto.ProductResponse> gerProduct(
+    ApiResponse<ProductV1Dto.ProductResponse> getProduct(
             @Schema(name = "productId", description = "브랜드별 조회")
             Long productId
     );
