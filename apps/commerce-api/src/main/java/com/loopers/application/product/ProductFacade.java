@@ -31,13 +31,14 @@ public class ProductFacade {
     private final BrandService brandService;
     private final ProductDomainService productDomainService;
 
-    public Page<ProductInfo> getProducts(Long brandId, Integer page, Integer size, String sortBy) {
-        SortType sortType = SortType.from(sortBy);
+    public Page<ProductInfo> getProducts(Long brandId, Pageable pageable, String sortBy) {
 
+        SortType sortType = SortType.from(sortBy);
         Pageable sortedPageable = PageRequest.of(
-                page,
-                size,
-                sortType.toSort());
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                sortType.toSort()
+        );
 
         return productService.getProducts(brandId, sortedPageable)
                 .map(product -> {

@@ -4,6 +4,7 @@ import com.loopers.interfaces.api.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.RequestParam;
 
 /**
@@ -28,18 +29,15 @@ public interface ProductV1ApiSpec {
             @Schema(description = "브랜드 ID", example = "1")
             @RequestParam(required = false) Long brandId,
 
-            @Schema(description = "페이지 번호", example = "0")
-            @RequestParam(defaultValue = "0") Integer page,
-
-            @Schema(description = "페이지 크기", example = "20")
-            @RequestParam(defaultValue = "20") Integer size,
+            @Schema(description = "페이지네이션 정보")
+            Pageable pageable,
 
             @Schema(description = "정렬(latest, price_asc, likes_desc)", example = "latest")
             @RequestParam(defaultValue = "latest") String sort
     );
 
-    ApiResponse<ProductV1Dto.ProductResponse> getProduct(
-            @Schema(name = "productId", description = "브랜드별 조회")
+    ApiResponse<ProductV1Dto.ProductDetailResponse> getProduct(
+            @Schema(name = "productId", description = "상품조회")
             Long productId
     );
 
