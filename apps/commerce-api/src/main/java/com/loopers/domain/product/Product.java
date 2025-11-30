@@ -1,5 +1,6 @@
 package com.loopers.domain.product;
 
+import com.loopers.domain.BaseEntity;
 import com.loopers.support.error.CoreException;
 import com.loopers.support.error.ErrorType;
 import jakarta.persistence.*;
@@ -20,7 +21,7 @@ import lombok.Getter;
 @Entity
 @Table(name = "product")
 @Getter
-public class Product {
+public class Product extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -41,7 +42,8 @@ public class Product {
     @Column(nullable = false)
     private Long stock;
 
-    protected Product() {}
+    protected Product() {
+    }
 
     private Product(Long brandId, String name, Long price, Long likeCount, Long stock) {
         this.brandId = requireValidBrandId(brandId);
