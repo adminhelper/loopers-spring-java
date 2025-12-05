@@ -40,4 +40,12 @@ public class PointService {
         point.use(useAmount);
         return pointRepository.save(point);
     }
+
+    @Transactional
+    public void refundPoint(String userId, Long amount) {
+        Point point = pointRepository.findByUserId(userId)
+                .orElseThrow(() -> new CoreException(ErrorType.NOT_FOUND, "포인트 정보를 찾을 수 없습니다."));
+        point.refund(amount);
+        pointRepository.save(point);
+    }
 }
