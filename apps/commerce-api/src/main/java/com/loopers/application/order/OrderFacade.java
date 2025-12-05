@@ -11,23 +11,9 @@ import com.loopers.domain.product.ProductService;
 import com.loopers.support.error.CoreException;
 import com.loopers.support.error.ErrorType;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * packageName : com.loopers.application.order
- * fileName     : OrderFacade
- * author      : byeonsungmun
- * date        : 2025. 11. 13.
- * description :
- * ===========================================
- * DATE         AUTHOR       NOTE
- * -------------------------------------------
- * 2025. 11. 13.     byeonsungmun       최초 생성
- */
-
-@Slf4j
 @Component
 @RequiredArgsConstructor
 public class OrderFacade {
@@ -47,13 +33,10 @@ public class OrderFacade {
 
         for (OrderItemCommand itemCommand : command.items()) {
 
-            //상품가져오고
             Product product = productService.getProduct(itemCommand.productId());
 
-            // 재고감소
             product.decreaseStock(itemCommand.quantity());
 
-            // OrderItem생성
             OrderItem orderItem = OrderItem.create(
                     product.getId(),
                     product.getName(),
@@ -64,7 +47,6 @@ public class OrderFacade {
             orderItem.setOrder(order);
         }
 
-        //총 가격구하고
         long totalAmount = order.getOrderItems().stream()
                 .mapToLong(OrderItem::getAmount)
                 .sum();
@@ -74,7 +56,6 @@ public class OrderFacade {
         Point point = pointService.findPointByUserId(command.userId());
         point.use(totalAmount);
 
-        //저장
         Order saved = orderService.createOrder(order);
         saved.updateStatus(OrderStatus.COMPLETE);
 
