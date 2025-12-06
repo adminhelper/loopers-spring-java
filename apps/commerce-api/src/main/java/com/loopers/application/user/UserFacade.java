@@ -1,5 +1,6 @@
 package com.loopers.application.user;
 
+import com.loopers.domain.point.PointService;
 import com.loopers.domain.user.User;
 import com.loopers.domain.user.UserService;
 import com.loopers.support.error.CoreException;
@@ -11,9 +12,11 @@ import org.springframework.stereotype.Component;
 @Component
 public class UserFacade {
     private final UserService userService;
+    private final PointService pointService;
 
     public UserInfo register(String userId, String email, String birth, String gender) {
         User user = userService.register(userId, email, birth, gender);
+        pointService.initPoint(user.getUserId());
         return UserInfo.from(user);
     }
 

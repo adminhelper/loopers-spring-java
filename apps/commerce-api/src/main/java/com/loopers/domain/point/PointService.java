@@ -18,6 +18,12 @@ public class PointService {
     }
 
     @Transactional
+    public Point initPoint(String userId) {
+        return pointRepository.findByUserId(userId)
+                .orElseGet(() -> pointRepository.save(Point.create(userId, 0L)));
+    }
+
+    @Transactional
     public Point chargePoint(String userId, Long chargeAmount) {
         Point point = pointRepository.findByUserId(userId).orElseThrow(() -> new CoreException(ErrorType.NOT_FOUND, "포인트를 충전할수 없는 사용자입니다."));
         point.charge(chargeAmount);
