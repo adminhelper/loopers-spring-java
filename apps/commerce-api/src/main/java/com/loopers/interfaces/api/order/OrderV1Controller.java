@@ -5,6 +5,7 @@ import com.loopers.application.order.OrderInfo;
 import com.loopers.interfaces.api.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -26,5 +27,22 @@ public class OrderV1Controller implements OrderV1ApiSpec {
     ) {
         OrderInfo orderInfo = orderFacade.createOrder(request.toCommand(userId));
         return ApiResponse.success(OrderV1Dto.OrderResponse.from(orderInfo));
+    }
+
+    @Override
+    @PostMapping("/{orderReference}/callback")
+    public ApiResponse<Object> callback(
+            @PathVariable("orderReference") String orderReference,
+            @Valid @RequestBody OrderV1Dto.PaymentCallbackRequest request
+    ) {
+        orderFacade.handlePaymentCallback(orderReference, request.status(), request.transactionKey(), request.reason());
+        return ApiResponse.success();
+    }
+
+    @Override
+    @PostMapping("/{orderId}/sync")
+    public ApiResponse<Object> syncPayment(@PathVariable("orderId") Long orderId) {
+        orderFacade.syncPayment(orderId);
+        return ApiResponse.success();
     }
 }
