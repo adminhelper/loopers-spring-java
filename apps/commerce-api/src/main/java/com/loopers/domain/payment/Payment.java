@@ -22,8 +22,9 @@ public class Payment extends BaseEntity {
     @Column(nullable = false)
     private String orderReference;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String cardType;
+    private CardType cardType;
 
     @Column(nullable = false)
     private String cardNo;
@@ -41,9 +42,10 @@ public class Payment extends BaseEntity {
     @Column
     private String reason;
 
-    protected Payment() {}
+    protected Payment() {
+    }
 
-    private Payment(Long orderId, String userId, String orderReference, String cardType, String cardNo, Long amount, PaymentStatus status) {
+    private Payment(Long orderId, String userId, String orderReference, CardType cardType, String cardNo, Long amount, PaymentStatus status) {
         this.orderId = orderId;
         this.userId = userId;
         this.orderReference = orderReference;
@@ -53,7 +55,20 @@ public class Payment extends BaseEntity {
         this.status = status;
     }
 
-    public static Payment pending(Long orderId, String userId, String orderReference, String cardType, String cardNo, Long amount) {
+    public static Payment pending(Long orderId, String userId, String orderReference, CardType cardType, String cardNo, Long amount) {
+        if (orderId == null || orderId <= 0) {
+            throw new IllegalArgumentException("주문 ID는 양수여야 합니다.");
+        }
+        if (userId == null || userId.trim().isEmpty()) {
+            throw new IllegalArgumentException("사용자 ID는 필수입니다.");
+        }
+        if (orderReference == null || orderReference.trim().isEmpty()) {
+            throw new IllegalArgumentException("주문 참조는 필수입니다.");
+        }
+        if (amount == null || amount <= 0) {
+            throw new IllegalArgumentException("금액은 0보다 커야 합니다.");
+        }
+
         return new Payment(orderId, userId, orderReference, cardType, cardNo, amount, PaymentStatus.PENDING);
     }
 
