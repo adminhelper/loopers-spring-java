@@ -1,6 +1,7 @@
 package com.loopers.infrastructure.payment;
 
 import com.loopers.infrastructure.payment.dto.PgPaymentV1Dto;
+import com.loopers.interfaces.api.ApiResponse;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
 import java.util.Collections;
@@ -20,7 +21,7 @@ public interface PgPaymentClient {
     @PostMapping("/api/v1/payments")
     @CircuitBreaker(name = "pgCircuit", fallbackMethod = "fallback")
     @Retry(name = "pgRetry")
-    PgPaymentV1Dto.ApiResponse<PgPaymentV1Dto.Response> requestPayment(
+    ApiResponse<PgPaymentV1Dto.Response> requestPayment(
             @RequestHeader("X-USER-ID") String userId,
             @RequestBody PgPaymentV1Dto.Request request
     );
@@ -28,22 +29,28 @@ public interface PgPaymentClient {
     @GetMapping("/api/v1/payments")
     @CircuitBreaker(name = "pgCircuit", fallbackMethod = "getPaymentsFallback")
     @Retry(name = "pgRetry")
-    PgPaymentV1Dto.ApiResponse<PgPaymentV1Dto.OrderResponse> getPayments(
+    ApiResponse<PgPaymentV1Dto.OrderResponse> getPayments(
             @RequestHeader("X-USER-ID") String userId,
             @RequestParam("orderId") String orderId
     );
 
-    default PgPaymentV1Dto.ApiResponse<PgPaymentV1Dto.Response> fallback(String userId, PgPaymentV1Dto.Request request, Throwable throwable) {
+    default ApiResponse<PgPaymentV1Dto.Response> fallback(String userId, PgPaymentV1Dto.Request request, Throwable throwable) {
         PgPaymentV1Dto.Response response = new PgPaymentV1Dto.Response(
                 null,
                 PgPaymentV1Dto.TransactionStatus.FAILED,
                 throwable.getMessage()
         );
-        return PgPaymentV1Dto.ApiResponse.fail(throwable.getMessage(), response);
+        return new ApiResponse<>(
+                ApiResponse.Metadata.fail("PG_ERROR", throwable.getMessage()),
+                response
+        );
     }
 
-    default PgPaymentV1Dto.ApiResponse<PgPaymentV1Dto.OrderResponse> getPaymentsFallback(String userId, String orderId, Throwable throwable) {
+    default ApiResponse<PgPaymentV1Dto.OrderResponse> getPaymentsFallback(String userId, String orderId, Throwable throwable) {
         PgPaymentV1Dto.OrderResponse response = new PgPaymentV1Dto.OrderResponse(orderId, Collections.emptyList());
-        return PgPaymentV1Dto.ApiResponse.fail(throwable.getMessage(), response);
+        return new ApiResponse<>(
+                ApiResponse.Metadata.fail("PG_ERROR", throwable.getMessage()),
+                response
+        );
     }
 }

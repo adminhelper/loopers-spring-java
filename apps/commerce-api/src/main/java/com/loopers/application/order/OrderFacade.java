@@ -3,22 +3,17 @@ package com.loopers.application.order;
 import com.loopers.domain.order.Order;
 import com.loopers.domain.order.OrderItem;
 import com.loopers.domain.order.OrderService;
-import com.loopers.domain.order.OrderStatus;
-import com.loopers.domain.payment.CardType;
+import com.loopers.domain.order.event.OrderEvent;
+import com.loopers.domain.order.event.OrderEventPublisher;
 import com.loopers.domain.payment.Payment;
 import com.loopers.domain.payment.PaymentService;
-import com.loopers.domain.payment.PaymentStatus;
 import com.loopers.domain.point.Point;
 import com.loopers.domain.point.PointService;
 import com.loopers.domain.product.Product;
 import com.loopers.domain.product.ProductService;
-import com.loopers.infrastructure.payment.PgPaymentClient;
-import com.loopers.infrastructure.payment.dto.PgPaymentV1Dto;
 import com.loopers.support.error.CoreException;
 import com.loopers.support.error.ErrorType;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,14 +22,14 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class OrderFacade {
 
-    private static final Logger log = LoggerFactory.getLogger(OrderFacade.class);
     private final OrderService orderService;
     private final ProductService productService;
     private final PointService pointService;
-    private final PgPaymentClient pgPaymentClient;
     private final PaymentService paymentService;
-    @Value("${app.callback.base-url")
+    private final OrderEventPublisher orderEventPublisher;
+    @Value("${app.callback.base-url}")
     private String callbackBaseUrl;
+
 
     @Transactional
     public OrderInfo createOrder(CreateOrderCommand command) {
@@ -73,17 +68,9 @@ public class OrderFacade {
         Order saved = orderService.createOrder(order);
 
         OrderPaymentCommand paymentCommand = command.payment();
-        CardType cardType = parseCardType(paymentCommand.cardType());
-        String orderReference = "order-" + saved.getId();
+        String cardType = paymentCommand.cardType();
+        String orderReference = createOrderReference(saved.getId());
         String callbackUrl = callbackBaseUrl + "/api/v1/orders/" + orderReference + "/callback";
-
-        PgPaymentV1Dto.Request pgRequest = new PgPaymentV1Dto.Request(
-                orderReference,
-                mapToPgCardType(cardType),
-                paymentCommand.cardNo(),
-                saved.getTotalAmount(),
-                callbackUrl
-        );
 
         Payment payment = Payment.pending(
                 saved.getId(),
@@ -94,122 +81,23 @@ public class OrderFacade {
                 saved.getTotalAmount()
         );
 
-        try {
-            PgPaymentV1Dto.ApiResponse<PgPaymentV1Dto.Response> pgResponse = pgPaymentClient.requestPayment(command.userId(), pgRequest);
-            PgPaymentV1Dto.Response pgData = requirePgResponse(pgResponse);
-            OrderStatus newStatus = mapOrderStatus(pgData.status());
-            if (newStatus == OrderStatus.FAIL) {
-                revertOrder(saved, command.userId());
-            } else {
-                saved.updateStatus(newStatus);
-            }
-
-            payment.updateStatus(parsePaymentStatus(pgData.status()), pgData.transactionKey(), pgData.reason());
-            paymentService.save(payment);
-        } catch (Exception e) {
-            revertOrder(saved, command.userId());
-            payment.updateStatus(PaymentStatus.FAIL, null, e.getMessage());
-            paymentService.save(payment);
-        }
+        paymentService.save(payment);
+        orderEventPublisher.publish(
+                OrderEvent.PaymentRequested.of(
+                        saved.getId(),
+                        command.userId(),
+                        orderReference,
+                        cardType,
+                        paymentCommand.cardNo(),
+                        saved.getTotalAmount(),
+                        callbackUrl
+                )
+        );
 
         return OrderInfo.from(saved);
     }
 
-    @Transactional
-    public void handlePaymentCallback(String orderReference, PgPaymentV1Dto.TransactionStatus status, String transactionKey, String reason) {
-        Payment payment = paymentService.findByOrderReference(orderReference)
-                .orElseThrow(() -> new CoreException(ErrorType.NOT_FOUND, "결제 정보를 찾을 수 없습니다."));
-
-        if (payment.getTransactionKey() != null && payment.getTransactionKey().equals(transactionKey)) {
-            return;
-        }
-
-        Order order = orderService.findById(payment.getOrderId());
-        OrderStatus newStatus = mapOrderStatus(status);
-        payment.updateStatus(parsePaymentStatus(status), transactionKey, reason);
-        paymentService.save(payment);
-        if (newStatus == OrderStatus.COMPLETE) {
-            order.updateStatus(OrderStatus.COMPLETE);
-        } else if (newStatus == OrderStatus.FAIL) {
-            revertOrder(order, payment.getUserId());
-        }
-    }
-
-    @Transactional
-    public void syncPayment(Long orderId) {
-        Payment payment = paymentService.findByOrderId(orderId)
-                .orElseThrow(() -> new CoreException(ErrorType.NOT_FOUND, "결제 정보를 찾을 수 없습니다."));
-        Order order = orderService.findById(orderId);
-        PgPaymentV1Dto.ApiResponse<PgPaymentV1Dto.OrderResponse> response = pgPaymentClient.getPayments(payment.getUserId(), payment.getOrderReference());
-        PgPaymentV1Dto.OrderResponse data = response != null ? response.data() : null;
-        if (data == null || data.transactions() == null || data.transactions().isEmpty()) {
-            log.warn("No transaction data found for orderId: {}, orderReference: {}", orderId, payment.getOrderReference());
-            return;
-        }
-        PgPaymentV1Dto.TransactionRecord record = data.transactions().get(data.transactions().size() - 1);
-        OrderStatus newStatus = mapOrderStatus(record.status());
-        payment.updateStatus(parsePaymentStatus(record.status()), record.transactionKey(), record.reason());
-        paymentService.save(payment);
-        if (newStatus == OrderStatus.FAIL) {
-            revertOrder(order, payment.getUserId());
-        } else {
-            order.updateStatus(newStatus);
-        }
-    }
-
-    private void revertOrder(Order order, String userId) {
-        for (OrderItem item : order.getOrderItems()) {
-            Product product = productService.getProduct(item.getProductId());
-            product.increaseStock(item.getQuantity());
-        }
-        Point point = pointService.findPointByUserId(userId);
-        if (point != null) {
-            point.refund(order.getTotalAmount());
-        }
-        order.updateStatus(OrderStatus.FAIL);
-    }
-
-    private CardType parseCardType(String cardType) {
-        try {
-            return CardType.valueOf(cardType.toUpperCase());
-        } catch (IllegalArgumentException e) {
-            throw new CoreException(ErrorType.BAD_REQUEST, "지원하지 않는 카드 타입입니다.");
-        }
-    }
-
-    private PgPaymentV1Dto.CardType mapToPgCardType(CardType cardType) {
-        try {
-            return PgPaymentV1Dto.CardType.valueOf(cardType.name());
-        } catch (IllegalArgumentException e) {
-            throw new CoreException(ErrorType.INTERNAL_ERROR, "PG 카드 타입 변환에 실패했습니다.");
-        }
-    }
-
-    private OrderStatus mapOrderStatus(PgPaymentV1Dto.TransactionStatus status) {
-        if (status == PgPaymentV1Dto.TransactionStatus.SUCCESS) {
-            return OrderStatus.COMPLETE;
-        }
-        if (status == PgPaymentV1Dto.TransactionStatus.FAILED) {
-            return OrderStatus.FAIL;
-        }
-        return OrderStatus.PENDING;
-    }
-
-    private PaymentStatus parsePaymentStatus(PgPaymentV1Dto.TransactionStatus status) {
-        if (status == PgPaymentV1Dto.TransactionStatus.SUCCESS) {
-            return PaymentStatus.SUCCESS;
-        }
-        if (status == PgPaymentV1Dto.TransactionStatus.FAILED) {
-            return PaymentStatus.FAIL;
-        }
-        return PaymentStatus.PENDING;
-    }
-
-    private PgPaymentV1Dto.Response requirePgResponse(PgPaymentV1Dto.ApiResponse<PgPaymentV1Dto.Response> response) {
-        PgPaymentV1Dto.Response data = response != null ? response.data() : null;
-        if (data == null) {
-            throw new CoreException(ErrorType.INTERNAL_ERROR, "PG 응답을 확인할 수 없습니다.");
-        }
-        return data;
+    private String createOrderReference(Long orderId) {
+        return "order-" + orderId;
     }
 }

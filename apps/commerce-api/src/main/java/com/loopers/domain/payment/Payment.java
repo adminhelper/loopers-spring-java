@@ -1,6 +1,8 @@
 package com.loopers.domain.payment;
 
 import com.loopers.domain.BaseEntity;
+import com.loopers.support.error.CoreException;
+import com.loopers.support.error.ErrorType;
 import jakarta.persistence.*;
 import lombok.Getter;
 
@@ -22,9 +24,8 @@ public class Payment extends BaseEntity {
     @Column(nullable = false)
     private String orderReference;
 
-    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private CardType cardType;
+    private String cardType;
 
     @Column(nullable = false)
     private String cardNo;
@@ -45,7 +46,7 @@ public class Payment extends BaseEntity {
     protected Payment() {
     }
 
-    private Payment(Long orderId, String userId, String orderReference, CardType cardType, String cardNo, Long amount, PaymentStatus status) {
+    private Payment(Long orderId, String userId, String orderReference, String cardType, String cardNo, Long amount, PaymentStatus status) {
         this.orderId = orderId;
         this.userId = userId;
         this.orderReference = orderReference;
@@ -55,18 +56,24 @@ public class Payment extends BaseEntity {
         this.status = status;
     }
 
-    public static Payment pending(Long orderId, String userId, String orderReference, CardType cardType, String cardNo, Long amount) {
+    public static Payment pending(Long orderId, String userId, String orderReference, String cardType, String cardNo, Long amount) {
         if (orderId == null || orderId <= 0) {
-            throw new IllegalArgumentException("주문 ID는 양수여야 합니다.");
+            throw new CoreException(ErrorType.BAD_REQUEST, "주문 ID는 양수여야 합니다.");
         }
         if (userId == null || userId.trim().isEmpty()) {
-            throw new IllegalArgumentException("사용자 ID는 필수입니다.");
+            throw new CoreException(ErrorType.BAD_REQUEST, "사용자 ID는 필수입니다.");
         }
         if (orderReference == null || orderReference.trim().isEmpty()) {
-            throw new IllegalArgumentException("주문 참조는 필수입니다.");
+            throw new CoreException(ErrorType.BAD_REQUEST, "주문 참조는 필수입니다.");
+        }
+        if (cardType == null || cardType.trim().isEmpty()) {
+            throw new CoreException(ErrorType.BAD_REQUEST, "카드 타입은 필수입니다.");
+        }
+        if (cardNo == null || cardNo.trim().isEmpty()) {
+            throw new CoreException(ErrorType.BAD_REQUEST, "카드 번호는 필수입니다.");
         }
         if (amount == null || amount <= 0) {
-            throw new IllegalArgumentException("금액은 0보다 커야 합니다.");
+            throw new CoreException(ErrorType.BAD_REQUEST, "금액은 0보다 커야 합니다.");
         }
 
         return new Payment(orderId, userId, orderReference, cardType, cardNo, amount, PaymentStatus.PENDING);

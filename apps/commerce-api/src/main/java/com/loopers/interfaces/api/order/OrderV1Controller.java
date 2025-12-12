@@ -2,6 +2,7 @@ package com.loopers.interfaces.api.order;
 
 import com.loopers.application.order.OrderFacade;
 import com.loopers.application.order.OrderInfo;
+import com.loopers.application.order.OrderPaymentProcessor;
 import com.loopers.interfaces.api.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class OrderV1Controller implements OrderV1ApiSpec {
 
     private final OrderFacade orderFacade;
+    private final OrderPaymentProcessor orderPaymentProcessor;
 
     @Override
     @PostMapping
@@ -35,14 +37,14 @@ public class OrderV1Controller implements OrderV1ApiSpec {
             @PathVariable("orderReference") String orderReference,
             @Valid @RequestBody OrderV1Dto.PaymentCallbackRequest request
     ) {
-        orderFacade.handlePaymentCallback(orderReference, request.status(), request.transactionKey(), request.reason());
+        orderPaymentProcessor.handlePaymentCallback(orderReference, request.status(), request.transactionKey(), request.reason());
         return ApiResponse.success();
     }
 
     @Override
     @PostMapping("/{orderId}/sync")
     public ApiResponse<Object> syncPayment(@PathVariable("orderId") Long orderId) {
-        orderFacade.syncPayment(orderId);
+        orderPaymentProcessor.syncPayment(orderId);
         return ApiResponse.success();
     }
 }

@@ -1,6 +1,6 @@
 package com.loopers.infrastructure.payment;
 
-import com.loopers.application.order.OrderFacade;
+import com.loopers.application.order.OrderPaymentProcessor;
 import com.loopers.domain.payment.Payment;
 import com.loopers.domain.payment.PaymentService;
 import java.util.List;
@@ -15,14 +15,14 @@ import org.springframework.stereotype.Component;
 public class OrderPaymentSyncScheduler {
 
     private final PaymentService paymentService;
-    private final OrderFacade orderFacade;
+    private final OrderPaymentProcessor orderPaymentProcessor;
 
     @Scheduled(fixedDelayString = "${pg.sync.fixed-delay-ms:6000000}")
     public void syncPendingPayments() {
         List<Payment> payments = paymentService.findPendingPayments();
         for (Payment payment : payments) {
             try {
-                orderFacade.syncPayment(payment.getOrderId());
+                orderPaymentProcessor.syncPayment(payment.getOrderId());
             } catch (Exception e) {
                 log.warn("결제 동기화 실패 orderId={}, reason={}", payment.getOrderId(), e.getMessage());
             }
