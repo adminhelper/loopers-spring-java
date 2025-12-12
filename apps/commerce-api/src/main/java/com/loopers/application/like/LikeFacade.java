@@ -31,4 +31,3 @@ public class LikeFacade {
         likeService.unlike(userId, productId);
     }
 }
-
