@@ -20,7 +20,6 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Component
@@ -66,7 +65,7 @@ public class OrderPaymentProcessor {
         applyPaymentResult(order, payment, record.status(), record.transactionKey(), record.reason());
     }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional
     public void handlePaymentResult(Long orderId, PgPaymentV1Dto.TransactionStatus status, String transactionKey, String reason) {
         Payment payment = paymentService.findByOrderId(orderId)
                 .orElseThrow(() -> new CoreException(ErrorType.NOT_FOUND, "결제 정보를 찾을 수 없습니다."));
