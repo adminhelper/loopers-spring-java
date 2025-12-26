@@ -3,13 +3,15 @@ package com.loopers.interfaces.consumer;
 import com.loopers.confg.kafka.KafkaConfig;
 import com.loopers.domain.event.EventHandledService;
 import com.loopers.domain.metrics.ProductMetricsService;
+import com.loopers.ranking.RankingService;
 import com.loopers.interfaces.consumer.message.CatalogEventMessage;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
 
 @Slf4j
 @Component
@@ -21,6 +23,7 @@ public class CatalogMetricsConsumer {
 
     private final ProductMetricsService productMetricsService;
     private final EventHandledService eventHandledService;
+    private final RankingService rankingService;
 
     @KafkaListener(
             topics = TOPIC,
@@ -48,6 +51,7 @@ public class CatalogMetricsConsumer {
                         ? System.currentTimeMillis()
                         : message.occurredAt().toInstant().toEpochMilli();
                 productMetricsService.applyLikeDelta(message.productId(), message.delta(), version);
+                rankingService.recordLikeEvent(message.productId(), message.delta(), message.occurredAt());
                 eventHandledService.markHandled(
                         message.eventId(),
                         HANDLER,
