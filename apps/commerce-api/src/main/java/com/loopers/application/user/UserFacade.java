@@ -7,6 +7,7 @@ import com.loopers.support.error.CoreException;
 import com.loopers.support.error.ErrorType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 @RequiredArgsConstructor
 @Component
@@ -14,6 +15,7 @@ public class UserFacade {
     private final UserService userService;
     private final PointService pointService;
 
+    @Transactional
     public UserInfo register(String userId, String email, String birth, String gender) {
         User user = userService.register(userId, email, birth, gender);
         pointService.initPoint(user.getUserId());

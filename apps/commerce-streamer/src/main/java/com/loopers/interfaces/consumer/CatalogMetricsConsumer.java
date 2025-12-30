@@ -3,8 +3,8 @@ package com.loopers.interfaces.consumer;
 import com.loopers.confg.kafka.KafkaConfig;
 import com.loopers.domain.event.EventHandledService;
 import com.loopers.domain.metrics.ProductMetricsService;
-import com.loopers.ranking.RankingService;
 import com.loopers.interfaces.consumer.message.CatalogEventMessage;
+import com.loopers.ranking.RankingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -40,7 +40,7 @@ public class CatalogMetricsConsumer {
 
         try {
             for (CatalogEventMessage message : messages) {
-                if (message == null || message.eventId() == null) {
+                if (!isValid(message)) {
                     continue;
                 }
                 if (eventHandledService.isHandled(message.eventId())) {
@@ -65,5 +65,11 @@ public class CatalogMetricsConsumer {
             log.error("Failed to process catalog events", exception);
             throw exception;
         }
+    }
+
+    private boolean isValid(CatalogEventMessage message) {
+        return message != null
+                && message.eventId() != null
+                && message.productId() != null;
     }
 }

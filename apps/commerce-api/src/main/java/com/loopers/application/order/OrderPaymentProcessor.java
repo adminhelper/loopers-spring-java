@@ -62,6 +62,11 @@ public class OrderPaymentProcessor {
         }
 
         PgPaymentV1Dto.TransactionRecord record = data.transactions().get(data.transactions().size() - 1);
+
+        if (payment.getTransactionKey() != null && payment.getTransactionKey().equals(record.transactionKey())) {
+            log.info("이미 처리된 결제입니다. orderId={}, transactionKey={}", orderId, record.transactionKey());
+            return;
+        }
         applyPaymentResult(order, payment, record.status(), record.transactionKey(), record.reason());
     }
 

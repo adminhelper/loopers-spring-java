@@ -88,13 +88,20 @@ public class OrderFacade {
                         command.userId(),
                         orderReference,
                         cardType,
-                        paymentCommand.cardNo(),
+                        maskCardNumber(paymentCommand.cardNo()),
                         saved.getTotalAmount(),
                         callbackUrl
                 )
         );
 
         return OrderInfo.from(saved);
+    }
+
+    private String maskCardNumber(String cardNo) {
+        if (cardNo == null || cardNo.length() < 4) {
+            return "****";
+        }
+        return "*".repeat(cardNo.length() - 4) + cardNo.substring(cardNo.length() - 4);
     }
 
     private String createOrderReference(Long orderId) {

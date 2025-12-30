@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -26,6 +27,7 @@ public class RankingFacade {
         return rankingService.getRankingRows(date, page, size)
                 .stream()
                 .map(this::toDto)
+                .filter(Objects::nonNull)
                 .collect(Collectors.toList());
     }
 
@@ -50,7 +52,7 @@ public class RankingFacade {
         if (row.productId() == null) {
             return null;
         }
-        
+
         Product product = productService.getProduct(row.productId());
         ProductInfo productInfo = ProductInfo.of(product, brandService.getBrand(product.getBrandId()));
         return new RankingInfo(row.rank(), row.score(), productInfo);

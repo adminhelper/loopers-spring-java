@@ -2,6 +2,8 @@ package com.loopers.ranking;
 
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
+
 @Component
 public class RankingScorePolicy {
 
@@ -21,6 +23,9 @@ public class RankingScorePolicy {
         if (price == null || quantity == null || price <= 0 || quantity <= 0) {
             return 0d;
         }
-        return price * quantity * ORDER_WEIGHT;
+        return BigDecimal.valueOf(price)
+                .multiply(BigDecimal.valueOf(quantity))
+                .multiply(BigDecimal.valueOf(ORDER_WEIGHT))
+                .doubleValue();
     }
 }
