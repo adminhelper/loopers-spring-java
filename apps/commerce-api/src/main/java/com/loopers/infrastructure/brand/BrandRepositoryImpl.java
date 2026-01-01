@@ -22,15 +22,15 @@ import java.util.Optional;
 @Component
 public class BrandRepositoryImpl implements BrandRepository {
 
-    private final BrandJpaRepository jpaRepository;
+    private final BrandJpaRepository brandJpaRepository;
 
     @Override
     public Optional<Brand> findById(Long id) {
-        return jpaRepository.findById(id);
+        return brandJpaRepository.findById(id);
     }
 
     @Override
-    public void save(Brand brand) {
-        jpaRepository.save(brand);
+    public Brand save(Brand brand) {
+        return brandJpaRepository.save(brand);
     }
 }

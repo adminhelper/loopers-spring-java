@@ -1,5 +1,6 @@
 package com.loopers.domain.brand;
 
+import com.loopers.domain.BaseEntity;
 import com.loopers.support.error.CoreException;
 import com.loopers.support.error.ErrorType;
 import jakarta.persistence.*;
@@ -19,7 +20,7 @@ import lombok.Getter;
 @Entity
 @Table(name = "brand")
 @Getter
-public class Brand {
+public class Brand extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -27,7 +28,8 @@ public class Brand {
     @Column(nullable = false)
     private String name;
 
-    protected  Brand() {}
+    protected Brand() {
+    }
 
     private Brand(String name) {
         this.name = requireValidName(name);
@@ -40,7 +42,7 @@ public class Brand {
 
     private String requireValidName(String name) {
         if (name == null || name.isEmpty()) {
-            throw new CoreException(ErrorType.BAD_REQUEST, "브랜드명은 비어 있을 수 없습니다.");
+            throw new CoreException(ErrorType.BAD_REQUEST, "브랜드명은 비어 있을수 없습니다.");
         }
         return name.trim();
     }

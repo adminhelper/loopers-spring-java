@@ -2,12 +2,13 @@ package com.loopers.application.product;
 
 import com.loopers.domain.brand.Brand;
 import com.loopers.domain.brand.BrandService;
-import com.loopers.domain.like.LikeService;
 import com.loopers.domain.product.ProductDetail;
 import com.loopers.domain.product.ProductDomainService;
 import com.loopers.domain.product.ProductService;
+import com.loopers.domain.product.SortType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 
@@ -28,15 +29,21 @@ public class ProductFacade {
 
     private final ProductService productService;
     private final BrandService brandService;
-    private final LikeService likeService;
     private final ProductDomainService productDomainService;
 
-    public Page<ProductInfo> getProducts(String sort, Pageable pageable) {
-        return productService.getProducts(sort ,pageable)
-                .map(product ->  {
+    public Page<ProductInfo> getProducts(Long brandId, Pageable pageable, String sortBy) {
+
+        SortType sortType = SortType.from(sortBy);
+        Pageable sortedPageable = PageRequest.of(
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                sortType.toSort()
+        );
+
+        return productService.getProducts(brandId, sortedPageable)
+                .map(product -> {
                     Brand brand = brandService.getBrand(product.getBrandId());
-                    long likeCount = likeService.countByProductId(product.getId());
-                    return ProductInfo.of(product, brand, likeCount);
+                    return ProductInfo.of(product, brand);
                 });
     }
 
