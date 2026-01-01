@@ -26,4 +26,7 @@ public interface ProductRepository {
     void decrementLikeCount(Long productId);
 
     Product save(Product product);
+
+    Page<Product> findByBrandId(Long brandId, Pageable pageable);
+
 }

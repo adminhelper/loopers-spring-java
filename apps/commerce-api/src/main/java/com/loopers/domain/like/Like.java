@@ -1,11 +1,10 @@
 package com.loopers.domain.like;
 
+import com.loopers.domain.BaseEntity;
 import com.loopers.support.error.CoreException;
 import com.loopers.support.error.ErrorType;
 import jakarta.persistence.*;
 import lombok.Getter;
-
-import java.time.LocalDateTime;
 
 /**
  * packageName : com.loopers.domain.like
@@ -19,9 +18,11 @@ import java.time.LocalDateTime;
  * 2025. 11. 11.     byeonsungmun       최초 생성
  */
 @Entity
-@Table(name = "product_like")
+@Table(
+        name = "product_like",
+        uniqueConstraints = {@UniqueConstraint(columnNames = {"ref_user_id", "ref_product_id"})})
 @Getter
-public class Like {
+public class Like extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -32,15 +33,12 @@ public class Like {
     @Column(name = "ref_product_id", nullable = false)
     private Long productId;
 
-    @Column(nullable = false)
-    private LocalDateTime createdAt;
-
-    protected Like() {}
+    protected Like() {
+    }
 
     private Like(String userId, Long productId) {
         this.userId = requireValidUserId(userId);
         this.productId = requireValidProductId(productId);
-        this.createdAt = LocalDateTime.now();
     }
 
     public static Like create(String userId, Long productId) {
